@@ -14,38 +14,69 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             this.wrapper = wrapper;
             this.hostControl = hostControl;
             this.settings = settings;
+            this.state = {
+                type: 'Daily',
+                hours: 0,
+                minutes: 0,
+                daysOfWeek: [],
+                dayFilter: 'day'
+            };
 
             this._buildControl();
-            this._setRecurrenceType('Daily');
+            this.setCronExpression(this.hostControl.val());
         }
 
         _createClass(CronPicker, [{
+            key: 'setCronExpression',
+            value: function setCronExpression(cronExpression) {
+                if (cronExpression.length > 0) {
+                    this._parseCronExpression(cronExpression);
+                }
+                this._updateUI();
+            }
+        }, {
+            key: '_setDayFilter',
+            value: function _setDayFilter(type) {
+                this.wrapper.find('.cron-picker-day-filter > button').removeClass('active');
+                this.wrapper.find('[data-day-filter=' + type + ']').addClass('active');
+            }
+        }, {
             key: '_buildControl',
             value: function _buildControl() {
                 var container = $('<div>', {
                     class: 'cron-picker-container',
-                    html: [this._buildRecurrenceTypes(), this._buildDaysOfWeeks(), this._buildTimePicker()]
+                    html: [this._buildRecurrenceTypes(), this._buildDaysOfWeeks(), this._buildMonthlyFilter(), this._buildTimePicker()]
                 });
 
                 this.wrapper.append(container);
             }
         }, {
+            key: '_buildMonthlyFilter',
+            value: function _buildMonthlyFilter() {
+                return $('<div>', {
+                    class: 'btn-group btn-group-sm cron-picker-day-filter',
+                    html: [$('<button>', { type: 'button', class: 'btn btn-default', text: 'DAY', 'data-day-filter': 'day' }), $('<button>', { type: 'button', class: 'btn btn-default', text: 'WEEKDAY', 'data-day-filter': 'weekday' })]
+                });
+            }
+        }, {
             key: '_buildTimePicker',
             value: function _buildTimePicker() {
-                var _this = this;
+                var self = this;
 
                 var hours = $('<select>', {
-                    html: this._buildOptions(24),
+                    html: CronPicker._buildOptions(24),
                     class: 'form-control cron-picker-hours'
                 }).on('change', function () {
-                    return _this._buildCronExpression();
+                    self.state.hours = this.value;
+                    self._buildCronExpression();
                 });
 
                 var minutes = $('<select>', {
-                    html: this._buildOptions(60),
+                    html: CronPicker._buildOptions(60),
                     class: 'form-control cron-picker-minutes'
                 }).on('change', function () {
-                    return _this._buildCronExpression();
+                    self.state.minutes = this.value;
+                    self._buildCronExpression();
                 });
 
                 return $('<div>', {
@@ -54,29 +85,23 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 });
             }
         }, {
-            key: '_buildOptions',
-            value: function _buildOptions(max) {
-                return [].concat(_toConsumableArray(Array(max).keys())).map(function (v) {
-                    return '<option value="' + v + '">' + ("0" + v).slice(-2) + '</option>';
-                }).join();
-            }
-        }, {
             key: '_buildRecurrenceTypes',
             value: function _buildRecurrenceTypes() {
                 return $('<ul>', {
                     class: 'nav nav-pills cron-picker-recurrence-types',
-                    html: [this._buildRecurrenceType('Daily'), this._buildRecurrenceType('Weekly')]
+                    html: [this._buildRecurrenceType('Daily'), this._buildRecurrenceType('Weekly'), this._buildRecurrenceType('Monthly')]
                 });
             }
         }, {
             key: '_buildRecurrenceType',
             value: function _buildRecurrenceType(type) {
-                var _this2 = this;
-
+                var self = this;
                 return $('<li>', {
                     'data-type': type,
                     html: $('<a>', { text: type }).on('click', function () {
-                        return _this2._setRecurrenceType(type);
+                        self.state.type = this.parentNode.getAttribute('data-type');
+                        self._buildCronExpression();
+                        self._updateUI();
                     })
                 });
             }
@@ -93,54 +118,97 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             value: function _buildDayOfWeekButton(text) {
                 var self = this;
                 return $('<button>', { type: 'button', class: 'btn btn-default btn-sm', text: text }).on('click', function () {
-                    $(this).toggleClass('active');
+                    var index = self.state.daysOfWeek.indexOf(this.innerText);
+                    if (index === -1) {
+                        self.state.daysOfWeek.push(this.innerText);
+                    } else {
+                        self.state.daysOfWeek.splice(index, 1);
+                    }
                     self._buildCronExpression();
+                    self._updateUI();
                 });
             }
         }, {
-            key: '_setRecurrenceType',
-            value: function _setRecurrenceType(type) {
-                this.wrapper.find('li').removeClass('active');
-                this.wrapper.find('[data-type=' + type + ']').addClass('active');
+            key: '_parseCronExpression',
+            value: function _parseCronExpression(cron) {
+                var components = cron.split(' ');
+                if (components.length !== 7) {
+                    console.warn('Invalid cron expression. Skip parsing...');
+                } else {
+                    this.state.hours = components[2];
+                    this.state.minutes = components[1];
 
-                if (type == 'Weekly') {
+                    if (components[5] !== '?') {
+                        this.state.type = 'Weekly';
+                        this.state.daysOfWeek = components[5].split(',');
+                    } else if (components[4] !== '*') {
+                        this.state.type = 'Monthly';
+                    } else {
+                        this.state.type = 'Daily';
+                    }
+                }
+            }
+        }, {
+            key: '_updateUI',
+            value: function _updateUI() {
+                var _this = this;
+
+                this.wrapper.find('.cron-picker-minutes').val(this.state.minutes);
+                this.wrapper.find('.cron-picker-hours').val(this.state.hours);
+
+                this.wrapper.find('li').removeClass('active');
+                this.wrapper.find('[data-type=' + this.state.type + ']').addClass('active');
+
+                if (this.state.type == 'Weekly') {
                     this.wrapper.find('.cron-picker-dow').removeClass('hidden');
+                    this.wrapper.find('.cron-picker-dow > button.active').removeClass('active');
+                    this.state.daysOfWeek.forEach(function (dow) {
+                        _this.wrapper.find('.cron-picker-dow > button:contains(\'' + dow + '\')').addClass('active');
+                    });
                 } else {
                     this.wrapper.find('.cron-picker-dow').addClass('hidden');
                 }
 
-                this._buildCronExpression();
+                if (this.state.type == 'Monthly') {
+                    this.wrapper.find('.cron-picker-day-filter').removeClass('hidden');
+                } else {
+                    this.wrapper.find('.cron-picker-day-filter').addClass('hidden');
+                }
+
+                this._setDayFilter(this.state.dayFilter);
             }
         }, {
             key: '_buildCronExpression',
             value: function _buildCronExpression() {
                 var results = "";
-                var type = this.wrapper.find('[data-type].active').data('type');
-                var hours = this.wrapper.find('.cron-picker-hours').val(),
-                    minutes = this.wrapper.find('.cron-picker-minutes').val();
-                switch (type) {
+                switch (this.state.type) {
                     case "Daily":
-                        results = '0 ' + minutes + ' ' + hours + ' 1 * ? *';
+                        results = '0 ' + this.state.minutes + ' ' + this.state.hours + ' 1 * ? *';
                         break;
                     case "Weekly":
-                        var selected = this.wrapper.find('.cron-picker-dow > button.active');
-                        var dow = [].map.call(selected, function (item) {
-                            return item.innerText;
-                        }).join(',');
-                        results = '0 ' + minutes + ' ' + hours + ' ? * ' + dow + ' *';
+                        var dow = this.state.daysOfWeek;
+                        results = '0 ' + this.state.minutes + ' ' + this.state.hours + ' ? * ' + (dow.length > 0 ? dow.join(',') : '?') + ' *';
                         break;
-                    // case "Monthly":
-                    //     switch ($("input:radio[name=MonthlyRadio]:checked").val()) {
-                    //         case "1":
-                    //             results = "0 " + Number($("#MonthlyMinutes").val()) + " " + Number($("#MonthlyHours").val()) + " " + $("#DayOfMOnthInput").val() + " 1/" + $("#MonthInput").val() + " ? *";
-                    //             break;
-                    //         case "2":
-                    //             results = "0 " + Number($("#MonthlyMinutes").val()) + " " + Number($("#MonthlyHours").val()) + " ? 1/" + Number($("#EveryMonthInput").val()) + " " + $("#DayInWeekOrder").val() + "#" + $("#WeekDay").val() + " *";
-                    //             break;
-                    //     }
-                    //     break;
+                    case "Monthly":
+                        //     switch ($("input:radio[name=MonthlyRadio]:checked").val()) {
+                        //         case "1":
+                        //             results = "0 " + Number($("#MonthlyMinutes").val()) + " " + Number($("#MonthlyHours").val()) + " " + $("#DayOfMOnthInput").val() + " 1/" + $("#MonthInput").val() + " ? *";
+                        //             break;
+                        //         case "2":
+                        //             results = "0 " + Number($("#MonthlyMinutes").val()) + " " + Number($("#MonthlyHours").val()) + " ? 1/" + Number($("#EveryMonthInput").val()) + " " + $("#DayInWeekOrder").val() + "#" + $("#WeekDay").val() + " *";
+                        //             break;
+                        //     }
+                        break;
                 }
                 console.log(results);
+                this.hostControl.val(results);
+            }
+        }], [{
+            key: '_buildOptions',
+            value: function _buildOptions(max) {
+                return [].concat(_toConsumableArray(Array(max).keys())).map(function (v) {
+                    return '<option value="' + v + '">' + ("0" + v).slice(-2) + '</option>';
+                }).join();
             }
         }]);
 
