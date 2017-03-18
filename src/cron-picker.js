@@ -10,8 +10,12 @@
                 type: 'Daily',
                 hours: 0,
                 minutes: 0,
+                dayNumber: 1,
+                monthRepeater: 1,
+                ordCondition: '#1',
                 daysOfWeek: [],
-                dayFilter: 'day'
+                dayFilter: 'day',
+                dayOfWeek: 'MON'
             };
 
             this._buildControl();
@@ -23,11 +27,6 @@
                 this._parseCronExpression(cronExpression);
             }
             this._updateUI();
-        }
-
-        _setDayFilter(type) {
-            this.wrapper.find('.cron-picker-day-filter > button').removeClass('active');
-            this.wrapper.find(`[data-day-filter=${type}]`).addClass('active');
         }
 
         _buildControl() {
@@ -45,12 +44,98 @@
         }
 
         _buildMonthlyFilter() {
-            return $('<div>', {
-                class: 'btn-group btn-group-sm cron-picker-day-filter',
+            const self = this;
+            const dayButton = this._buildFilterButton('day');
+            const weekDayButton = this._buildFilterButton('weekday');
+
+            const daySelect = $('<select>', {
+                html: CronPicker._buildOptions(31, 1),
+                class: 'form-control cron-picker-day-number'
+            }).on('change', function() {
+                self.state.dayNumber = this.value;
+                self._buildCronExpression();
+            });
+
+            const monthRepeaterSelect = $('<select>', {
+                html: CronPicker._buildOptions(12, 1),
+                class: 'form-control cron-picker-month-repeater'
+            }).on('change', function() {
+                self.state.monthRepeater = this.value;
+                self._buildCronExpression();
+            });
+
+            const buttonContainer = $('<div>', {
+                class: 'btn-group',
+                html: [dayButton, weekDayButton]
+            });
+
+            const dayFilterContainer = $('<div>', {
+                class: 'cron-picker-day-type-filter',
                 html: [
-                    $('<button>', { type: 'button', class: 'btn btn-default', text: 'DAY', 'data-day-filter': 'day' }),
-                    $('<button>', { type: 'button', class: 'btn btn-default', text: 'WEEKDAY', 'data-day-filter': 'weekday' })
+                    daySelect, 'day&nbsp;'
                 ]
+            });
+
+            const ordinalitySelect = $('<select>', {
+                class: 'form-control cron-picker-ord-select',
+                html: this._buildOrdinalityOptions()
+            }).on('change', function() {
+                self.state.ordCondition = this.value;
+                self._buildCronExpression();
+            });
+
+            const dayOfWeekSelect = $('<select>', {
+                class: 'form-control cron-picker-dow-select',
+                html: this._buildDaysOfWeekOptions()
+            }).on('change', function() {
+                self.state.dayOfWeek = this.value;
+                self._buildCronExpression();
+            });
+
+            const weekdayFilterContainer = $('<div>', {
+                class: 'cron-picker-weekday-type-filter',
+                html: [
+                    ordinalitySelect, dayOfWeekSelect
+                ]
+            });
+
+            return $('<div>', {
+                class: 'cron-picker-day-filter',
+                html: [
+                    buttonContainer, dayFilterContainer, weekdayFilterContainer,
+                    'of every', monthRepeaterSelect, 'month(s)'
+                ]
+            });
+        }
+
+        _buildOrdinalityOptions() {
+            return [
+                ['First', '#1'], ['Second', '#2'], ['Third', '#3'], ['Last', 'L'],
+            ].map( pair => $('<option>', { value: pair[1], text: pair[0] }) );
+        }
+
+        _buildDaysOfWeekOptions() {
+            return [
+
+                ['Sunday', 'SUN'], ['Monday', 'MON'], ['Tuesday', 'TUE'],
+                ['Wednesday', 'WED'], ['Friday', 'FRI'], ['Saturday', 'SAT']
+
+            ].map(pair => {
+                return $('<option>', { value: pair[1], text: pair[0] })
+            });
+        }
+
+        _buildFilterButton(type) {
+            const self = this;
+            return $('<button>', {
+                type: 'button',
+                class: 'btn btn-default',
+                text: type.toUpperCase(),
+                'data-day-filter': type
+            }).on('click', function () {
+                self.state.dayFilter = this.getAttribute('data-day-filter');
+                self._buildCronExpression();
+                self._updateUI();
             });
         }
 
@@ -79,8 +164,11 @@
             });
         }
 
-        static _buildOptions(max) {
-            return [...Array(max).keys()].map((v) => `<option value="${v}">${("0"+v).slice(-2)}</option>`).join();
+        static _buildOptions(max, offset) {
+            offset = offset || 0;
+            return [...Array(max).keys()].map((v) =>
+                `<option value="${v + offset}">${("0"+(v+offset)).slice(-2)}</option>`
+            ).join();
         }
 
         _buildRecurrenceTypes() {
@@ -109,21 +197,15 @@
         _buildDaysOfWeeks() {
             return $('<div>', {
                 class: 'cron-picker-dow',
-                html: [
-                    this._buildDayOfWeekButton('SUN'),
-                    this._buildDayOfWeekButton('MON'),
-                    this._buildDayOfWeekButton('TUE'),
-                    this._buildDayOfWeekButton('WED'),
-                    this._buildDayOfWeekButton('THU'),
-                    this._buildDayOfWeekButton('FRI'),
-                    this._buildDayOfWeekButton('SAT')
-                ]
+                html: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(item => {
+                    return this._buildDayOfWeekButton(item);
+                })
             })
         }
 
         _buildDayOfWeekButton(text) {
             const self = this;
-            return $('<button>', { type: 'button', class: 'btn btn-default btn-sm', text: text })
+            return $('<button>', { type: 'button', class: 'btn btn-default', text: text })
                 .on('click', function () {
                     const index = self.state.daysOfWeek.indexOf(this.innerText);
                     if (index === -1) {
@@ -144,6 +226,9 @@
                 this.state.hours = components[2];
                 this.state.minutes = components[1];
 
+                // 0 30 5 ? * TUE,WED *
+                // 0 30 5 ? 1/6 FRI#3 *
+
                 if (components[5] !== '?') {
                     this.state.type = 'Weekly';
                     this.state.daysOfWeek = components[5].split(',');
@@ -156,18 +241,31 @@
         }
 
         _updateUI() {
-            this.wrapper.find('.cron-picker-minutes').val(this.state.minutes);
-            this.wrapper.find('.cron-picker-hours').val(this.state.hours);
+
+            // Set controls value based on current state
 
             this.wrapper.find('li').removeClass('active');
             this.wrapper.find(`[data-type=${this.state.type}]`).addClass('active');
 
+            this.wrapper.find('[data-day-filter]').removeClass('active');
+            this.wrapper.find(`[data-day-filter=${this.state.dayFilter}]`).addClass('active');
+
+            this.wrapper.find('.cron-picker-dow > button.active').removeClass('active');
+            this.state.daysOfWeek.forEach(dow => {
+                this.wrapper.find(`.cron-picker-dow > button:contains('${dow}')`).addClass('active');
+            });
+
+            this.wrapper.find('.cron-picker-minutes').val(this.state.minutes);
+            this.wrapper.find('.cron-picker-hours').val(this.state.hours);
+            this.wrapper.find('.cron-picker-dow-select').val(this.state.dayOfWeek);
+            this.wrapper.find('.cron-picker-month-repeater').val(this.state.monthRepeater);
+            this.wrapper.find('.cron-picker-ord-select').val(this.state.ordCondition);
+            this.wrapper.find('.cron-picker-day-number').val(this.state.dayNumber);
+
+            // Set controls visibility
+
             if (this.state.type == 'Weekly') {
                 this.wrapper.find('.cron-picker-dow').removeClass('hidden');
-                this.wrapper.find('.cron-picker-dow > button.active').removeClass('active');
-                this.state.daysOfWeek.forEach(dow => {
-                    this.wrapper.find(`.cron-picker-dow > button:contains('${dow}')`).addClass('active');
-                });
             } else {
                 this.wrapper.find('.cron-picker-dow').addClass('hidden');
             }
@@ -178,7 +276,13 @@
                 this.wrapper.find('.cron-picker-day-filter').addClass('hidden');
             }
 
-            this._setDayFilter(this.state.dayFilter);
+            if (this.state.dayFilter == 'day') {
+                this.wrapper.find('.cron-picker-day-type-filter').removeClass('hidden');
+                this.wrapper.find('.cron-picker-weekday-type-filter').addClass('hidden');
+            } else {
+                this.wrapper.find('.cron-picker-day-type-filter').addClass('hidden');
+                this.wrapper.find('.cron-picker-weekday-type-filter').removeClass('hidden');
+            }
         }
 
         _buildCronExpression() {
@@ -192,14 +296,11 @@
                     results = `0 ${this.state.minutes} ${this.state.hours} ? * ${dow.length > 0 ? dow.join(',') : '?' } *`;
                     break;
                 case "Monthly":
-                //     switch ($("input:radio[name=MonthlyRadio]:checked").val()) {
-                //         case "1":
-                //             results = "0 " + Number($("#MonthlyMinutes").val()) + " " + Number($("#MonthlyHours").val()) + " " + $("#DayOfMOnthInput").val() + " 1/" + $("#MonthInput").val() + " ? *";
-                //             break;
-                //         case "2":
-                //             results = "0 " + Number($("#MonthlyMinutes").val()) + " " + Number($("#MonthlyHours").val()) + " ? 1/" + Number($("#EveryMonthInput").val()) + " " + $("#DayInWeekOrder").val() + "#" + $("#WeekDay").val() + " *";
-                //             break;
-                //     }
+                    if (this.state.dayFilter === 'day') {
+                        results = `0 ${this.state.minutes} ${this.state.hours} ${this.state.dayNumber} 1/${this.state.monthRepeater} ? *`;
+                    } else if (this.state.dayFilter == 'weekday') {
+                        results = `0 ${this.state.minutes} ${this.state.hours} ? 1/${this.state.monthRepeater} ${this.state.dayOfWeek}${this.state.ordCondition} *`;
+                    }
                     break;
             }
             console.log(results);

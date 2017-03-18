@@ -12,6 +12,20 @@
 
 .cron-picker-day-filter {
   margin-bottom: 10px;
+
+  .cron-picker-day-type-filter, .cron-picker-weekday-type-filter  {
+    display: inline-block;
+  }
+
+  select {
+    display: inline-block;
+    width: 60px;
+    margin: 0 5px;
+  }
+
+  .cron-picker-dow-select {
+    width: 100px;
+  }
 }
 
 .cron-picker-time {
