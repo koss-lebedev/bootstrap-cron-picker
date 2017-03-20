@@ -17,6 +17,7 @@
                 dayFilter: 'day',
                 dayOfWeek: 'MON'
             };
+            this.cronFormatter = new StandardCronFormatter();
 
             this._buildControl();
             this.setCronExpression(this.hostControl.val());
@@ -219,41 +220,8 @@
         }
 
         _parseCronExpression(cron) {
-            const parts = cron.split(' ');
-            if (parts.length !== 7) {
-                console.warn('Invalid cron expression. Skip parsing...');
-            } else {
-                this.state.hours = parts[2];
-                this.state.minutes = parts[1];
-
-                if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
-
-                    // daily
-                    this.state.type = 'Daily';
-
-                } else if (parts[4] == '*' && parts[5] !== '?') {
-
-                    // weekly
-                    this.state.type = 'Weekly';
-                    this.state.daysOfWeek = parts[5] === '' ? [] : parts[5].split(',');
-
-                } else if (parts[4] !== '*') {
-
-                    // monthly
-                    this.state.type = 'Monthly';
-                    this.state.monthRepeater = parts[4].split('/')[1];
-
-                    if (parts[5] === '?') {
-                        this.state.dayFilter = 'day';
-                        this.state.dayNumber = parts[3];
-                    } else {
-                        this.state.dayFilter = 'weekday';
-                        this.state.dayOfWeek = parts[5].substr(0, 3);
-                        this.state.ordCondition = parts[5].substr(3);
-                    }
-
-                }
-            }
+            const newState = this.cronFormatter.parseCronExpression(cron);
+            $.extend(this.state, newState);
         }
 
         _updateUI() {
@@ -303,23 +271,7 @@
         }
 
         _buildCronExpression() {
-            let cronExpression = "";
-            switch (this.state.type) {
-                case "Daily":
-                    cronExpression = `0 ${this.state.minutes} ${this.state.hours} 1/1 * ? *`;
-                    break;
-                case "Weekly":
-                    const dow = this.state.daysOfWeek.join(',');
-                    cronExpression = `0 ${this.state.minutes} ${this.state.hours} ? * ${dow} *`;
-                    break;
-                case "Monthly":
-                    if (this.state.dayFilter === 'day') {
-                        cronExpression = `0 ${this.state.minutes} ${this.state.hours} ${this.state.dayNumber} 1/${this.state.monthRepeater} ? *`;
-                    } else if (this.state.dayFilter == 'weekday') {
-                        cronExpression = `0 ${this.state.minutes} ${this.state.hours} ? 1/${this.state.monthRepeater} ${this.state.dayOfWeek}${this.state.ordCondition} *`;
-                    }
-                    break;
-            }
+            let cronExpression = this.cronFormatter.buildCronExpression(this.state);
             this.hostControl.val(cronExpression);
             if (typeof this.settings.onCronChanged === "function") {
                 this.settings.onCronChanged(cronExpression);

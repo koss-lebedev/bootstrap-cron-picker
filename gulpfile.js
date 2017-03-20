@@ -1,5 +1,6 @@
 var gulp = require('gulp'),
     minify = require('gulp-minify'),
+    concat = require('gulp-concat'),
     sass = require('gulp-sass'),
     cleanCSS = require('gulp-clean-css'),
     babel = require('gulp-babel');
@@ -7,10 +8,11 @@ var gulp = require('gulp'),
 gulp.task('default', [ 'minify-js', 'minify-css' ]);
 
 gulp.task('minify-js', function() {
-    gulp.src('src/*.js')
+    gulp.src(['src/standard-cron-formatter.js', 'src/quartz-cron-formatter.js', 'src/cron-picker.js'])
         .pipe(babel({
             presets: ['es2015']
         }))
+        .pipe(concat('cron-picker.js'))
         .pipe(minify({
             ext:{
                 src:'-debug.js',

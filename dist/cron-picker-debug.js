@@ -2,6 +2,149 @@
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var StandardCronFormatter = function () {
+    function StandardCronFormatter() {
+        _classCallCheck(this, StandardCronFormatter);
+    }
+
+    _createClass(StandardCronFormatter, [{
+        key: 'parseCronExpression',
+        value: function parseCronExpression(cron) {
+            var state = {};
+            var parts = cron.split(' ');
+            if (parts.length !== 6) {
+                console.warn('Invalid cron expression. Skip parsing...');
+            } else {
+                state.hours = parts[1];
+                state.minutes = parts[0];
+
+                if (parts[3] === '*' && parts[4] === '*' && parts[5] === '*') {
+
+                    // daily
+                    state.type = 'Daily';
+                } else if (parts[3] == '*' && parts[4] !== '*') {
+
+                    // weekly
+                    state.type = 'Weekly';
+                    state.daysOfWeek = parts[4] === '' ? [] : parts[4].split(',');
+                } else if (parts[3] !== '*') {
+
+                    // monthly
+                    state.type = 'Monthly';
+                    state.monthRepeater = parts[3].split('/')[1];
+
+                    // if (parts[5] === '?') {
+                    state.dayFilter = 'day';
+                    state.dayNumber = parts[2];
+                    // } else {
+                    //     state.dayFilter = 'weekday';
+                    //     state.dayOfWeek = parts[5].substr(0, 3);
+                    //     state.ordCondition = parts[5].substr(3);
+                    // }
+                }
+            }
+            return state;
+        }
+    }, {
+        key: 'buildCronExpression',
+        value: function buildCronExpression(state) {
+            switch (state.type) {
+                case "Daily":
+                    return state.minutes + ' ' + state.hours + ' 1/1 * * *';
+                case "Weekly":
+                    var dow = state.daysOfWeek.join(',');
+                    return state.minutes + ' ' + state.hours + ' * ' + dow + ' * *';
+                case "Monthly":
+                    if (state.dayFilter === 'day') {
+                        return state.minutes + ' ' + state.hours + ' ' + state.dayNumber + ' 1/' + state.monthRepeater + ' * *';
+                    } else if (state.dayFilter == 'weekday') {
+                        // M H DM  MY DW Y
+                        // 0 9 1-7 *  1  *                       First Monday of each month, at 9 a.m.
+                        return 'nope';
+                        // return `${state.minutes} ${state.hours} ? 1/${state.monthRepeater} ${state.dayOfWeek}${state.ordCondition} *`;
+                    }
+            }
+        }
+    }]);
+
+    return StandardCronFormatter;
+}();
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var QuartzCronFormatter = function () {
+    function QuartzCronFormatter() {
+        _classCallCheck(this, QuartzCronFormatter);
+    }
+
+    _createClass(QuartzCronFormatter, [{
+        key: 'parseCronExpression',
+        value: function parseCronExpression(cron) {
+            var state = {};
+            var parts = cron.split(' ');
+            if (parts.length !== 7) {
+                console.warn('Invalid cron expression. Skip parsing...');
+            } else {
+                state.hours = parts[2];
+                state.minutes = parts[1];
+
+                if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
+
+                    // daily
+                    state.type = 'Daily';
+                } else if (parts[4] == '*' && parts[5] !== '?') {
+
+                    // weekly
+                    state.type = 'Weekly';
+                    state.daysOfWeek = parts[5] === '' ? [] : parts[5].split(',');
+                } else if (parts[4] !== '*') {
+
+                    // monthly
+                    state.type = 'Monthly';
+                    state.monthRepeater = parts[4].split('/')[1];
+
+                    if (parts[5] === '?') {
+                        state.dayFilter = 'day';
+                        state.dayNumber = parts[3];
+                    } else {
+                        state.dayFilter = 'weekday';
+                        state.dayOfWeek = parts[5].substr(0, 3);
+                        state.ordCondition = parts[5].substr(3);
+                    }
+                }
+            }
+            return state;
+        }
+    }, {
+        key: 'buildCronExpression',
+        value: function buildCronExpression(state) {
+            switch (state.type) {
+                case "Daily":
+                    return '0 ' + state.minutes + ' ' + state.hours + ' 1/1 * ? *';
+                case "Weekly":
+                    var dow = state.daysOfWeek.join(',');
+                    return '0 ' + state.minutes + ' ' + state.hours + ' ? * ' + dow + ' *';
+                case "Monthly":
+                    if (state.dayFilter === 'day') {
+                        return '0 ' + state.minutes + ' ' + state.hours + ' ' + state.dayNumber + ' 1/' + state.monthRepeater + ' ? *';
+                    } else if (state.dayFilter == 'weekday') {
+                        return '0 ' + state.minutes + ' ' + state.hours + ' ? 1/' + state.monthRepeater + ' ' + state.dayOfWeek + state.ordCondition + ' *';
+                    }
+            }
+        }
+    }]);
+
+    return QuartzCronFormatter;
+}();
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25,6 +168,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 dayFilter: 'day',
                 dayOfWeek: 'MON'
             };
+            this.cronFormatter = new StandardCronFormatter();
 
             this._buildControl();
             this.setCronExpression(this.hostControl.val());
@@ -213,38 +357,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }, {
             key: '_parseCronExpression',
             value: function _parseCronExpression(cron) {
-                var parts = cron.split(' ');
-                if (parts.length !== 7) {
-                    console.warn('Invalid cron expression. Skip parsing...');
-                } else {
-                    this.state.hours = parts[2];
-                    this.state.minutes = parts[1];
-
-                    if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
-
-                        // daily
-                        this.state.type = 'Daily';
-                    } else if (parts[4] == '*' && parts[5] !== '?') {
-
-                        // weekly
-                        this.state.type = 'Weekly';
-                        this.state.daysOfWeek = parts[5] === '' ? [] : parts[5].split(',');
-                    } else if (parts[4] !== '*') {
-
-                        // monthly
-                        this.state.type = 'Monthly';
-                        this.state.monthRepeater = parts[4].split('/')[1];
-
-                        if (parts[5] === '?') {
-                            this.state.dayFilter = 'day';
-                            this.state.dayNumber = parts[3];
-                        } else {
-                            this.state.dayFilter = 'weekday';
-                            this.state.dayOfWeek = parts[5].substr(0, 3);
-                            this.state.ordCondition = parts[5].substr(3);
-                        }
-                    }
-                }
+                var newState = this.cronFormatter.parseCronExpression(cron);
+                $.extend(this.state, newState);
             }
         }, {
             key: '_updateUI',
@@ -297,23 +411,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }, {
             key: '_buildCronExpression',
             value: function _buildCronExpression() {
-                var cronExpression = "";
-                switch (this.state.type) {
-                    case "Daily":
-                        cronExpression = '0 ' + this.state.minutes + ' ' + this.state.hours + ' 1/1 * ? *';
-                        break;
-                    case "Weekly":
-                        var dow = this.state.daysOfWeek.join(',');
-                        cronExpression = '0 ' + this.state.minutes + ' ' + this.state.hours + ' ? * ' + dow + ' *';
-                        break;
-                    case "Monthly":
-                        if (this.state.dayFilter === 'day') {
-                            cronExpression = '0 ' + this.state.minutes + ' ' + this.state.hours + ' ' + this.state.dayNumber + ' 1/' + this.state.monthRepeater + ' ? *';
-                        } else if (this.state.dayFilter == 'weekday') {
-                            cronExpression = '0 ' + this.state.minutes + ' ' + this.state.hours + ' ? 1/' + this.state.monthRepeater + ' ' + this.state.dayOfWeek + this.state.ordCondition + ' *';
-                        }
-                        break;
-                }
+                var cronExpression = this.cronFormatter.buildCronExpression(this.state);
                 this.hostControl.val(cronExpression);
                 if (typeof this.settings.onCronChanged === "function") {
                     this.settings.onCronChanged(cronExpression);
