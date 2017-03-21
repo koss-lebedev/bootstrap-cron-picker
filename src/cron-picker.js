@@ -15,9 +15,9 @@
                 ordCondition: '#1',
                 daysOfWeek: [],
                 dayFilter: 'day',
-                dayOfWeek: 'MON'
+                dayOfWeek: 1
             };
-            this.cronFormatter = new StandardCronFormatter();
+            this.cronFormatter = StandardCronFormatter;
 
             this._buildControl();
             this.setCronExpression(this.hostControl.val());
@@ -26,6 +26,8 @@
         setCronExpression(cronExpression) {
             if (cronExpression.length > 0) {
                 this._parseCronExpression(cronExpression);
+            } else {
+                this._buildCronExpression();
             }
             this._updateUI();
         }
@@ -67,7 +69,7 @@
 
             const buttonContainer = $('<div>', {
                 class: 'btn-group',
-                html: [dayButton, weekDayButton]
+                html: [] // TODO: [dayButton, weekDayButton]
             });
 
             const dayFilterContainer = $('<div>', {
@@ -118,8 +120,8 @@
         _buildDaysOfWeekOptions() {
             return [
 
-                ['Sunday', 'SUN'], ['Monday', 'MON'], ['Tuesday', 'TUE'],
-                ['Wednesday', 'WED'], ['Friday', 'FRI'], ['Saturday', 'SAT']
+                ['Monday', 1], ['Tuesday', 2], ['Wednesday', 3], ['Thurdsay', 4],
+                ['Friday', 5], ['Saturday', 6], ['Sunday', 7]
 
             ].map(pair => {
                 return $('<option>', { value: pair[1], text: pair[0] })
@@ -198,19 +200,20 @@
         _buildDaysOfWeeks() {
             return $('<div>', {
                 class: 'cron-picker-dow',
-                html: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(item => {
-                    return this._buildDayOfWeekButton(item);
+                html: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((item, index) => {
+                    return this._buildDayOfWeekButton(item, index + 1);
                 })
             })
         }
 
-        _buildDayOfWeekButton(text) {
+        _buildDayOfWeekButton(text, value) {
             const self = this;
-            return $('<button>', { type: 'button', class: 'btn btn-default', text: text })
+            return $('<button>', { type: 'button', class: 'btn btn-default', text: text, 'data-dow': value })
                 .on('click', function () {
-                    const index = self.state.daysOfWeek.indexOf(this.innerText);
+                    const value = this.getAttribute('data-dow');
+                    const index = self.state.daysOfWeek.indexOf(value);
                     if (index === -1) {
-                        self.state.daysOfWeek.push(this.innerText);
+                        self.state.daysOfWeek.push(value);
                     } else {
                         self.state.daysOfWeek.splice(index, 1);
                     }
@@ -220,7 +223,7 @@
         }
 
         _parseCronExpression(cron) {
-            const newState = this.cronFormatter.parseCronExpression(cron);
+            const newState = this.cronFormatter.parse(cron);
             $.extend(this.state, newState);
         }
 
@@ -237,7 +240,7 @@
 
             this.wrapper.find('.cron-picker-dow > button.active').removeClass('active');
             this.state.daysOfWeek.forEach(dow => {
-                this.wrapper.find(`.cron-picker-dow > button:contains('${dow}')`).addClass('active');
+                this.wrapper.find(`.cron-picker-dow > button[data-dow=${dow}]`).addClass('active');
             });
 
             this.wrapper.find('.cron-picker-minutes').val(this.state.minutes);
@@ -271,7 +274,7 @@
         }
 
         _buildCronExpression() {
-            let cronExpression = this.cronFormatter.buildCronExpression(this.state);
+            let cronExpression = this.cronFormatter.build(this.state);
             this.hostControl.val(cronExpression);
             if (typeof this.settings.onCronChanged === "function") {
                 this.settings.onCronChanged(cronExpression);
