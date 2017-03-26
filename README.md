@@ -13,8 +13,28 @@ and extended format used in Quartz Scheduler (QuartzCronFormatter)
 
 ## Installation
 
-TODO:
+TODO: install jQuery and bootstrap using NPM, and reference them from index.html
+
+TODO: add NPM and BOWER
 
 ## Usage
 
-TODO:
+To attach CronPicker to an input field with id `#cron-picker`:
+
+```javascript
+$('#cron-picker').cronPicker();
+```
+
+You can also initialize CronPicker with existing cron expression. 
+To do that, simply set value of the HTML input before attaching CronPicker.
+
+For advanced usage, you can pass any of the following options:
+
+```javascript
+$('#cron-picker').cronPicker({
+        // callback function called each time cron expression is updated
+        onCronChanged: function (cron) {
+            console.log(cron);
+        }
+    });
+```
