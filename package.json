@@ -17,5 +17,9 @@
     "gulp-concat": "^2.6.1",
     "gulp-minify": "0.0.15",
     "gulp-sass": "^3.1.0"
+  },
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "jquery": "^3.2.1"
   }
 }
