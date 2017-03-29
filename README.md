@@ -17,7 +17,7 @@ TODO: add NPM
 
 Using Bower:
 
-    bower install nested-inputs
+    bower install cron-picker
 
 ## Usage
 
