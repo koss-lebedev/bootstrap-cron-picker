@@ -13,9 +13,11 @@ and extended format used in Quartz Scheduler (QuartzCronFormatter)
 
 ## Installation
 
-TODO: install jQuery and bootstrap using NPM, and reference them from index.html
+TODO: add NPM
 
-TODO: add NPM and BOWER
+Using Bower:
+
+    bower install nested-inputs
 
 ## Usage
 
