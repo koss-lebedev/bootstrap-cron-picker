@@ -13,7 +13,7 @@ and extended format used in Quartz Scheduler (QuartzCronFormatter)
 
 ## Installation
 
-TODO: add NPM
+    npm install cron-picker
 
 Using Bower:
 
