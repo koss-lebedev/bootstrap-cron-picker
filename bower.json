@@ -13,7 +13,7 @@
     "picker",
     "bootstrap"
   ],
-  "homepage": "https://github.com/koss-lebedev/cron-picker",
+  "homepage": "https://github.com/koss-lebedev/bootstrap-cron-picker",
   "ignore": [
     "**/.*",
     "node_modules",
