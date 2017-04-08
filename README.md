@@ -13,11 +13,11 @@ and extended format used in Quartz Scheduler (QuartzCronFormatter)
 
 ## Installation
 
-    npm install cron-picker
+    npm install bootstrap-cron-picker
 
 Using Bower:
 
-    bower install cron-picker
+    bower install bootstrap-cron-picker
 
 ## Usage
 
