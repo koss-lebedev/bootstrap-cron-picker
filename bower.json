@@ -1,6 +1,6 @@
 {
-  "name": "cron-picker",
-  "description": "jQuery plugin for building cron expressions",
+  "name": "bootstrap-cron-picker",
+  "description": "CronPicker is a javascript library that provides easy to use interface for generating CRON expressions.",
   "main": "src/cron-picker.js",
   "authors": [
     "Constantine Lebedev <koss.lebedev@gmail.com>"
