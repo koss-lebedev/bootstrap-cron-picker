@@ -109,12 +109,17 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 (function ($) {
     var CronPicker = function () {
-        function CronPicker(wrapper, hostControl, settings) {
+        function CronPicker(wrapper, hostControl, options) {
             _classCallCheck(this, CronPicker);
 
             this.wrapper = wrapper;
             this.hostControl = hostControl;
-            this.settings = settings;
+            var defaults = {
+                format: '24',
+                cronFormatter: StandardCronFormatter
+            };
+            this.settings = $.extend({}, defaults, options);
+
             this.state = {
                 type: 'Daily',
                 hours: 0,
@@ -126,7 +131,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 dayFilter: 'day',
                 dayOfWeek: 1
             };
-            this.cronFormatter = StandardCronFormatter;
 
             this._buildControl();
             this.setCronExpression(this.hostControl.val());
@@ -369,7 +373,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }, {
             key: '_parseCronExpression',
             value: function _parseCronExpression(cron) {
-                var newState = this.cronFormatter.parse(cron);
+                var newState = this.settings.cronFormatter.parse(cron);
                 $.extend(this.state, newState);
             }
         }, {
@@ -426,7 +430,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }, {
             key: '_buildCronExpression',
             value: function _buildCronExpression() {
-                var cronExpression = this.cronFormatter.build(this.state);
+                var cronExpression = this.settings.cronFormatter.build(this.state);
                 this.hostControl.val(cronExpression);
                 if (typeof this.settings.onCronChanged === "function") {
                     this.settings.onCronChanged(cronExpression);

@@ -2,10 +2,15 @@
 
     class CronPicker {
 
-        constructor(wrapper, hostControl, settings) {
+        constructor(wrapper, hostControl, options) {
             this.wrapper = wrapper;
             this.hostControl = hostControl;
-            this.settings = settings;
+            const defaults = {
+                format: '24',
+                cronFormatter: StandardCronFormatter,
+            };
+            this.settings = $.extend({}, defaults, options);
+
             this.state = {
                 type: 'Daily',
                 hours: 0,
@@ -17,7 +22,6 @@
                 dayFilter: 'day',
                 dayOfWeek: 1
             };
-            this.cronFormatter = StandardCronFormatter;
 
             this._buildControl();
             this.setCronExpression(this.hostControl.val());
@@ -283,7 +287,7 @@
         }
 
         _parseCronExpression(cron) {
-            const newState = this.cronFormatter.parse(cron);
+            const newState = this.settings.cronFormatter.parse(cron);
             $.extend(this.state, newState);
         }
 
@@ -336,7 +340,7 @@
         }
 
         _buildCronExpression() {
-            let cronExpression = this.cronFormatter.build(this.state);
+            let cronExpression = this.settings.cronFormatter.build(this.state);
             this.hostControl.val(cronExpression);
             if (typeof this.settings.onCronChanged === "function") {
                 this.settings.onCronChanged(cronExpression);
