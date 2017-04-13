@@ -34,6 +34,14 @@ For advanced usage, you can pass any of the following options:
 
 ```javascript
 $('#cron-picker').cronPicker({
+        // time format, either 12 hours or 24 hours (default)
+        format: '24',
+        
+        // available formatters:
+        //   - StandardCronFormatter (crontab specification)
+        //   - QuartzCronFormatter (quartz.net specification)
+        cronFormatter: StandardCronFormatter,
+    
         // callback function called each time cron expression is updated
         onCronChanged: function (cron) {
             console.log(cron);
