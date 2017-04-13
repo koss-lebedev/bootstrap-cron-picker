@@ -243,27 +243,69 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }, {
             key: '_buildTimePicker',
             value: function _buildTimePicker() {
+                return $('<div>', {
+                    class: 'cron-picker-time',
+                    html: ['Run at:', this._buildHourPicker(), '-', this._buildMinutesPicker(), this._buildAMPMPicker()]
+                });
+            }
+        }, {
+            key: '_buildHourPicker',
+            value: function _buildHourPicker() {
+                var self = this;
+                if (self.settings.format === '24') {
+                    return $('<select>', {
+                        html: CronPicker._buildOptions(24),
+                        class: 'form-control cron-picker-hours'
+                    }).on('change', function () {
+                        self._setHours();
+                        self._buildCronExpression();
+                    });
+                } else {
+                    return $('<select>', {
+                        html: CronPicker._buildOptions(12, 1),
+                        class: 'form-control cron-picker-hours'
+                    }).on('change', function () {
+                        self._setHours();
+                        self._buildCronExpression();
+                    });
+                }
+            }
+        }, {
+            key: '_setHours',
+            value: function _setHours() {
+                var hours = parseInt(this.wrapper.find('.cron-picker-hours').val());
+                if (this.settings.format == '12') {
+                    var ampm = this.wrapper.find('.cron-picker-ampm').val();
+                    if (ampm == "PM" && hours < 12) hours = hours + 12;
+                    if (ampm == "AM" && hours == 12) hours = hours - 12;
+                }
+                this.state.hours = hours;
+            }
+        }, {
+            key: '_buildAMPMPicker',
+            value: function _buildAMPMPicker() {
+                var self = this;
+                if (self.settings.format === '12') {
+                    return $('<select>', {
+                        html: ["<option value='AM'>AM</option>", "<option value='PM'>PM</option>"],
+                        class: 'form-control cron-picker-ampm'
+                    }).on('change', function () {
+                        self._setHours();
+                        self._buildCronExpression();
+                    });
+                }
+            }
+        }, {
+            key: '_buildMinutesPicker',
+            value: function _buildMinutesPicker() {
                 var self = this;
 
-                var hours = $('<select>', {
-                    html: CronPicker._buildOptions(24),
-                    class: 'form-control cron-picker-hours'
-                }).on('change', function () {
-                    self.state.hours = this.value;
-                    self._buildCronExpression();
-                });
-
-                var minutes = $('<select>', {
+                return $('<select>', {
                     html: CronPicker._buildOptions(60),
                     class: 'form-control cron-picker-minutes'
                 }).on('change', function () {
                     self.state.minutes = this.value;
                     self._buildCronExpression();
-                });
-
-                return $('<div>', {
-                    class: 'cron-picker-time',
-                    html: ['Run at:', hours, '-', minutes]
                 });
             }
         }, {
@@ -316,6 +358,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 });
             }
         }, {
+            key: '_formatHours',
+            value: function _formatHours(hours) {
+                if (this.settings.format == '24') {
+                    return [hours, null];
+                } else {
+                    return [hours % 12 || 12, hours < 12 ? "AM" : "PM"];
+                }
+            }
+        }, {
             key: '_parseCronExpression',
             value: function _parseCronExpression(cron) {
                 var newState = this.cronFormatter.parse(cron);
@@ -326,7 +377,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             value: function _updateUI() {
                 var _this2 = this;
 
-                console.log(this.state);
                 // Set controls value based on current state
 
                 this.wrapper.find('li').removeClass('active');
@@ -341,7 +391,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 });
 
                 this.wrapper.find('.cron-picker-minutes').val(this.state.minutes);
-                this.wrapper.find('.cron-picker-hours').val(this.state.hours);
+
+                var formatted = this._formatHours(this.state.hours);
+                this.wrapper.find('.cron-picker-hours').val(formatted[0]);
+                this.wrapper.find('.cron-picker-ampm').val(formatted[1]);
+
                 this.wrapper.find('.cron-picker-dow-select').val(this.state.dayOfWeek);
                 this.wrapper.find('.cron-picker-month-repeater').val(this.state.monthRepeater);
                 this.wrapper.find('.cron-picker-ord-select').val(this.state.ordCondition);

@@ -28,6 +28,7 @@
 <script>
     $(function () {
         $('#cron-picker').cronPicker({
+            format: '12',
             onCronChanged: function (cron) {
                 console.log(cron);
             }
