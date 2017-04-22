@@ -1,5 +1,6 @@
 # CronPicker
 
+[![Code Climate](https://codeclimate.com/github/koss-lebedev/bootstrap-cron-picker/badges/gpa.svg)](https://codeclimate.com/github/koss-lebedev/bootstrap-cron-picker)
 [![npm version](https://badge.fury.io/js/bootstrap-duration-picker.svg)](https://badge.fury.io/js/bootstrap-cron-picker)
 [![Bower version](https://badge.fury.io/bo/bootstrap-duration-picker.svg)](https://badge.fury.io/bo/bootstrap-cron-picker)
 
